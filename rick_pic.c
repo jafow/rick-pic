@@ -14,24 +14,24 @@ MODULE_AUTHOR(MOD_AUTHOR);
 MODULE_DESCRIPTION(MOD_DESC);
 
 /* path to gif */
-static char *rick_pic_file = "~/rr.gif";
+static char *rick_pic_file = "/home/users/rick-pick/rick.gif";
 
-module_param(rick_pic_file, charp, S_IRUSR | S_IWUSR | S_IGRP | S_IROTH);
+module_param(rick_pic_file, charp, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
 MODULE_PARM_DESC(rick_pic_file, "Path to rick_pic.gif file");
 
 asmlinkage long (*original_sys_call_open)(const char __user *, int, umode_t);
 asmlinkage unsigned long **sys_call_table;
-asmlinkage unsigned long rick_pic_open(const char __user *filename, int flags, umode_t);
+asmlinkage long rick_pic_open(const char __user *filename, int flags, umode_t);
 
 static unsigned long **get_sys_call_table()
 {
     unsigned long offset;
-    unsinged long **t;
+    unsigned long **table;
 
     for(offset = PAGE_OFFSET; offset < ULLONG_MAX; offset += sizeof(void *)) {
-        t = (unsigned long **) offset;
-        if (t[__NR_close] == (unsigned long *) sys_close)
-            return r;
+        table = (unsigned long **) offset;
+        if (table[__NR_close] == (unsigned long *) sys_close)
+            return table;
 
     }
     return 1;
@@ -62,7 +62,7 @@ static int __init rick_pic_init(void)
 
     sys_call_table = get_sys_call_table();
     if (!sys_call_table) {
-        prink(KERN_ERR "Couldn't locate sys_call table\n");
+        printk(KERN_ERR "Couldn't locate sys_call table\n");
         return -EPERM;
     }
 
