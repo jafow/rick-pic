@@ -1,4 +1,4 @@
-obj-m := rick.o
+obj-m += rick_pic.o
 
 all:
 	make -C /lib/modules/$(shell uname -r)/build M=$(PWD) modules

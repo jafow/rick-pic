@@ -15,6 +15,7 @@ MODULE_DESCRIPTION(MOD_DESC);
 
 /* path to gif */
 static char *rick_pic_file = "/home/users/rick-pick/rick.gif";
+static unsigned long **get_sys_call_table(void);
 
 module_param(rick_pic_file, charp, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
 MODULE_PARM_DESC(rick_pic_file, "Path to rick_pic.gif file");
@@ -23,19 +24,7 @@ asmlinkage long (*original_sys_call_open)(const char __user *, int, umode_t);
 asmlinkage unsigned long **sys_call_table;
 asmlinkage long rick_pic_open(const char __user *filename, int flags, umode_t);
 
-static unsigned long **get_sys_call_table()
-{
-    unsigned long offset;
-    unsigned long **table;
 
-    for(offset = PAGE_OFFSET; offset < ULLONG_MAX; offset += sizeof(void *)) {
-        table = (unsigned long **) offset;
-        if (table[__NR_close] == (unsigned long *) sys_close)
-            return table;
-
-    }
-    return 1;
-}
 
 asmlinkage long rick_pic_open(const char __user *filename, int flags, umode_t mode)
 {
@@ -59,7 +48,11 @@ asmlinkage long rick_pic_open(const char __user *filename, int flags, umode_t mo
 
 static int __init rick_pic_init(void)
 {
-
+    if(!rick_pic_file) {
+        printk(KERN_ERR "No rick roll filename given.");
+        return -EINVAL;  /* invalid argument */
+    }
+ 
     sys_call_table = get_sys_call_table();
     if (!sys_call_table) {
         printk(KERN_ERR "Couldn't locate sys_call table\n");
@@ -80,9 +73,22 @@ static void __exit rick_pic_cleanup(void)
     printk(KERN_INFO "exit rick_pic module"); 
 
     DISABLE_WRITE_PROTECTION;
-    sys_call_table = (unsigned long *) original_sys_call_open;
+    sys_call_table[__NR_open] = (unsigned long *) original_sys_call_open;
     ENABLE_WRITE_PROTECTION;
 }
 
+static unsigned long **get_sys_call_table()
+{
+    unsigned long offset;
+    unsigned long **table;
+
+    for(offset = PAGE_OFFSET; offset < ULLONG_MAX; offset += sizeof(void *)) {
+        table = (unsigned long **) offset;
+    if (table[__NR_close] == (unsigned long *) sys_close)
+        return table;
+
+    }
+    return NULL;
+}
 module_init(rick_pic_init);
 module_exit(rick_pic_cleanup);
